@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học Tiếng Anh Qua Tin Tức</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --hint-color: #e67e22;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        /* Style cho từ vựng */
+        .vocab {
+            cursor: pointer;
+            font-weight: 600;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        /* Khi đang ở dạng gợi ý (Tiếng Việt) */
+        .is-hint {
+            color: var(--hint-color);
+            background-color: rgba(230, 126, 34, 0.1);
+            border-bottom: 2px dashed var(--hint-color);
+        }
+
+        /* Khi đã mở sang Tiếng Anh */
+        .is-revealed {
+            color: var(--accent-color);
+            background-color: rgba(52, 152, 219, 0.1);
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: #2980b9;
+        }
+
+        .editor-area {
+            margin-top: 50px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="content">
+        </div>
+
+    <div class="editor-area">
+        <h3>Soạn thảo bài viết (Markdown)</h3>
+        <p><small>Cú pháp: <code>[English|Tiếng Việt]</code></small></p>
+        <textarea id="markdownInput" placeholder="Nhập bài viết của bạn tại đây...">
+# Tiêu đề bài báo
+
+[Learning|Học tập] a new language is [challenging|thử thách] but [rewarding|đáng giá]. 
+
+As the saying goes: "[Knowledge|Tri thức] is power". 
+
+Hãy thử nhấn nút xanh để mở từng từ một!
+        </textarea>
+        <button onclick="renderArticle()">Cập nhật bài viết</button>
+    </div>
+</div>
+
+<div class="controls">
+    <button onclick="revealNext()">Hiện từ tiếp theo (Space)</button>
+    <button onclick="resetAll()" style="background-color: #95a5a6;">Đặt lại từ đầu</button>
+</div>
+
+<script>
+    const contentDiv = document.getElementById('content');
+    const inputArea = document.getElementById('markdownInput');
+
+    function renderArticle() {
+        const rawMarked = marked.parse(inputArea.textContent || inputArea.value);
+        
+        // Regex xử lý cú pháp [English|Vietnamese]
+        // Group 1: English ($1), Group 2: Vietnamese ($2)
+        const customFormat = rawMarked.replace(/\[(.*?)\|(.*?)\]/g, (match, en, vi) => {
+            return `<span class="vocab is-hint" data-en="${en}" data-vi="${vi}">${vi}</span>`;
+        });
+
+        contentDiv.innerHTML = customFormat;
+    }
+
+    function revealNext() {
+        // Tìm từ đầu tiên vẫn còn đang hiện gợi ý (is-hint)
+        const nextVocab = document.querySelector('.vocab.is-hint');
+        if (nextVocab) {
+            nextVocab.textContent = nextVocab.getAttribute('data-en');
+            nextVocab.classList.remove('is-hint');
+            nextVocab.classList.add('is-revealed');
+            
+            // Cuộn màn hình đến từ vừa mở nếu cần
+            nextVocab.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            alert("Đã mở hết tất cả từ vựng!");
+        }
+    }
+
+    function resetAll() {
+        renderArticle();
+    }
+
+    // Lắng nghe phím Space để mở từ nhanh
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault(); // Ngăn cuộn trang khi bấm Space
+            revealNext();
+        }
+    });
+
+    // Khởi tạo bài viết lần đầu
+    renderArticle();
+</script>
+
+</body>
+</html>
