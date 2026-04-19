@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Đăng bài mới</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #2c3e50; color: white; }
+        .box { max-width: 600px; margin: 0 auto; background: #34495e; padding: 20px; border-radius: 10px; }
+        textarea { width: 100%; height: 300px; margin-top: 10px; border-radius: 5px; padding: 10px; }
+        button { width: 100%; padding: 15px; margin-top: 10px; background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Hệ thống đăng bài Mask Từ Vựng</h2>
+        <textarea id="textInput" placeholder="Dán nội dung Markdown [English|Tiếng Việt] vào đây..."></textarea>
+        <button onclick="postArticle()">ĐĂNG BÀI NGAY</button>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyASbbhvVKV12-ToHs5Lq2EZyNjvla-ALkU",
+        authDomain: "mask-tu-vung.firebaseapp.com",
+        projectId: "mask-tu-vung",
+        storageBucket: "mask-tu-vung.firebasestorage.app",
+        messagingSenderId: "281486876910",
+        appId: "1:281486876910:web:02446860686fe9686253ff"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.postArticle = async () => {
+        const content = document.getElementById('textInput').value;
+        const tagInput = prompt("Nhập tags (cách nhau bởi dấu phẩy):", "IELTS, News");
+        if(!content) return;
+
+        try {
+            await addDoc(collection(db, "articles"), {
+                content: content,
+                tags: tagInput.split(','),
+                createdAt: new Date()
+            });
+            alert("Đã đăng bài thành công!");
+            document.getElementById('textInput').value = "";
+        } catch (e) { alert("Lỗi: " + e.message); }
+    };
+</script>
+</body>
+</html>
