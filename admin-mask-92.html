@@ -2,132 +2,20 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Admin - Mask Từ Vựng</title>
+    <title>Admin - Đăng bài mới</title>
     <style>
-        :root {
-            --bg: #1a1a1a;
-            --card: #2d2d2d;
-            --text: #ffffff;
-            --accent: #3498db;
-            --success: #2ecc71;
-            /* Khoảng cách an toàn phía trên để né thanh trạng thái Android */
-            --safe-top: 35px; 
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            /* Sử dụng dvh (dynamic viewport height) để thích ứng với bàn phím ẩn/hiện */
-            height: 100dvh; 
-            overflow: hidden;
-        }
-
-        header {
-            padding: var(--safe-top) 15px 10px 15px;
-            background: var(--card);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #444;
-        }
-
-        .editor-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            background: var(--bg);
-            overflow: hidden;
-        }
-
-        textarea {
-            flex: 1;
-            width: 100%;
-            background: #252525;
-            color: var(--text);
-            border: 1px solid #444;
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 16px;
-            line-height: 1.5;
-            resize: none;
-            box-sizing: border-box;
-            outline: none;
-            -webkit-appearance: none; /* Khử style mặc định của iOS/Android */
-        }
-
-        textarea:focus { border-color: var(--accent); }
-
-        .toolbar {
-            display: flex;
-            gap: 10px;
-            padding: 10px 5px;
-            overflow-x: auto;
-            scrollbar-width: none; /* Ẩn scrollbar trên Firefox */
-        }
-        .toolbar::-webkit-scrollbar { display: none; } /* Ẩn scrollbar trên Chrome */
-
-        .tool-btn {
-            background: var(--card);
-            color: var(--text);
-            border: 1px solid #555;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 14px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .footer {
-            padding: 10px 15px 20px 15px;
-            background: var(--card);
-            border-top: 1px solid #444;
-        }
-
-        .btn-post {
-            width: 100%;
-            padding: 16px;
-            background: var(--success);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .btn-post:active { transform: scale(0.97); background: #27ae60; }
-
-        #status { font-size: 12px; font-weight: normal; }
+        body { font-family: sans-serif; padding: 20px; background: #2c3e50; color: white; }
+        .box { max-width: 600px; margin: 0 auto; background: #34495e; padding: 20px; border-radius: 10px; }
+        textarea { width: 100%; height: 300px; margin-top: 10px; border-radius: 5px; padding: 10px; }
+        button { width: 100%; padding: 15px; margin-top: 10px; background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
-
-<header>
-    <strong style="font-size: 18px;">Admin Panel</strong>
-    <span id="status" style="color: #2ecc71;">● Sẵn sàng</span>
-</header>
-
-<div class="editor-container">
-    <textarea id="textInput" placeholder="Nhập nội dung bài viết..."></textarea>
-    
-    <div class="toolbar">
-        <button class="tool-btn" onclick="insertText('[|]')">➕ [Mask]</button>
-        <button class="tool-btn" onclick="insertText('**','**')"><b>B</b> In đậm</button>
-        <button class="tool-btn" onclick="insertText('# ')">H1</button>
-        <button class="tool-btn" onclick="insertText('## ')">H2</button>
-        <button class="tool-btn" onclick="insertText('> ')">Trích dẫn</button>
+    <div class="box">
+        <h2>Hệ thống đăng bài Mask Từ Vựng</h2>
+        <textarea id="textInput" placeholder="Dán nội dung Markdown [English|Tiếng Việt] vào đây..."></textarea>
+        <button onclick="postArticle()">ĐĂNG BÀI NGAY</button>
     </div>
-</div>
-
-<div class="footer">
-    <button class="btn-post" onclick="postArticle()">ĐĂNG BÀI NGAY</button>
-</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -145,49 +33,21 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const input = document.getElementById('textInput');
-    const status = document.getElementById('status');
-
-    // Hàm chèn nhanh cú pháp
-    window.insertText = (before, after = '') => {
-        const start = input.selectionStart;
-        const end = input.selectionEnd;
-        const text = input.value;
-        const selected = text.substring(start, end);
-        input.value = text.substring(0, start) + before + selected + after + text.substring(end);
-        
-        // Đặt con trỏ vào giữa dấu [|]
-        const newPos = start + before.length;
-        input.focus();
-        input.setSelectionRange(newPos, newPos);
-    };
-
     window.postArticle = async () => {
-        const content = input.value;
-        if(!content) return alert("Bạn chưa nhập nội dung!");
-
-        const tagInput = prompt("Chủ đề bài viết (vd: IELTS, News):", "English");
-        
-        status.innerText = "● Đang gửi...";
-        status.style.color = "#f1c40f";
+        const content = document.getElementById('textInput').value;
+        const tagInput = prompt("Nhập tags (cách nhau bởi dấu phẩy):", "IELTS, News");
+        if(!content) return;
 
         try {
             await addDoc(collection(db, "articles"), {
                 content: content,
-                tags: tagInput ? tagInput.split(',').map(t => t.trim()) : ["General"],
+                tags: tagInput.split(','),
                 createdAt: new Date()
             });
             alert("Đã đăng bài thành công!");
-            input.value = "";
-            status.innerText = "● Sẵn sàng";
-            status.style.color = "#2ecc71";
-        } catch (e) { 
-            alert("Lỗi: " + e.message); 
-            status.innerText = "● Thất bại";
-            status.style.color = "#e74c3c";
-        }
+            document.getElementById('textInput').value = "";
+        } catch (e) { alert("Lỗi: " + e.message); }
     };
 </script>
-
 </body>
 </html>
