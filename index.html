@@ -4,60 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mask Từ Vựng - Học Tiếng Anh Chủ Động</title>
-    <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root { --primary-color: #2c3e50; --accent-color: #3498db; --hint-color: #e67e22; --bg-color: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.8; background-color: var(--bg-color); color: var(--primary-color); padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; }
+        .vocab { cursor: pointer; font-weight: 600; padding: 2px 4px; border-radius: 4px; transition: 0.3s; }
+        .is-hint { color: var(--hint-color); background-color: rgba(230, 126, 34, 0.1); border-bottom: 2px dashed var(--hint-color); }
+        .is-revealed { color: var(--accent-color); background-color: rgba(52, 152, 219, 0.1); border-bottom: 2px solid var(--accent-color); }
+        .controls { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; }
+        button { padding: 12px 20px; cursor: pointer; color: white; border: none; border-radius: 50px; background-color: var(--accent-color); box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        #tagDisplay { text-align: center; margin-bottom: 20px; font-style: italic; color: #7f8c8d; }
+    </style>
 </head>
 <body>
-
 <div class="container">
-    <header>
-        <h1>Mask Từ Vựng</h1>
-        <div id="tagDisplay" class="tag-list"></div>
-    </header>
-
-    <article id="content">
-        <p style="text-align:center; color: #999;">Đang tải bài học mới nhất...</p>
-    </article>
+    <h1>Mask Từ Vựng</h1>
+    <div id="tagDisplay"></div>
+    <div id="content"><p style="text-align:center">Đang tải nội dung...</p></div>
 </div>
-
 <div class="controls">
-    <button class="btn-reveal" onclick="revealNext()">Mở từ tiếp theo (Space)</button>
-    <button class="btn-reset" onclick="location.reload()" style="background-color: #95a5a6; padding: 10px 15px; font-size: 12px;">Làm mới</button>
+    <button onclick="revealNext()">Mở từ tiếp theo (Space)</button>
 </div>
 
 <script type="module">
-    import { firebaseConfig } from './assets/js/firebase-config.js';
-    import { parseContent, setupRevealLogic } from './assets/js/utils.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Khởi tạo Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyASbbhvVKV12-ToHs5Lq2EZyNjvla-ALkU",
+        authDomain: "mask-tu-vung.firebaseapp.com",
+        projectId: "mask-tu-vung",
+        storageBucket: "mask-tu-vung.firebasestorage.app",
+        messagingSenderId: "281486876910",
+        appId: "1:281486876910:web:02446860686fe9686253ff"
+    };
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    
-    // Khởi tạo logic phím Space và Reveal
-    const { revealNext } = setupRevealLogic();
-    window.revealNext = revealNext; 
 
-    // Lắng nghe dữ liệu
     const q = query(collection(db, "articles"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
             const data = snapshot.docs[0].data();
-            
-            // 1. Hiển thị Tags bài viết
-            const tagDiv = document.getElementById('tagDisplay');
-            if(data.tags) {
-                tagDiv.innerHTML = data.tags.map(t => `<span class="tag-item">#${t}</span>`).join('');
-            }
-
-            // 2. Hiển thị Nội dung đã được "Mask"
-            document.getElementById('content').innerHTML = parseContent(data.content);
-        } else {
-            document.getElementById('content').innerHTML = "<p style='text-align:center'>Chưa có bài viết nào.</p>";
+            document.getElementById('tagDisplay').innerHTML = "Chủ đề: " + (data.tags ? data.tags.join(', ') : '');
+            const rawHTML = marked.parse(data.content);
+            document.getElementById('content').innerHTML = rawHTML.replace(/\[(.*?)\|(.*?)\]/g, (m, en, vi) => 
+                `<span class="vocab is-hint" data-en="${en}">${vi}</span>`);
         }
     });
-</script>
 
+    window.revealNext = () => {
+        const next = document.querySelector('.vocab.is-hint');
+        if (next) {
+            next.textContent = next.getAttribute('data-en');
+            next.classList.replace('is-hint', 'is-revealed');
+            next.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+    window.addEventListener('keydown', (e) => { if(e.code === 'Space') { e.preventDefault(); revealNext(); } });
+</script>
 </body>
 </html>
