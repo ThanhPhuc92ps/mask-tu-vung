@@ -2,20 +2,117 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Đăng bài mới</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - Mask Từ Vựng</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #2c3e50; color: white; }
-        .box { max-width: 600px; margin: 0 auto; background: #34495e; padding: 20px; border-radius: 10px; }
-        textarea { width: 100%; height: 300px; margin-top: 10px; border-radius: 5px; padding: 10px; }
-        button { width: 100%; padding: 15px; margin-top: 10px; background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; }
+        :root {
+            --bg: #1a1a1a;
+            --card: #2d2d2d;
+            --text: #ffffff;
+            --accent: #3498db;
+            --success: #2ecc71;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 15px;
+            background: var(--card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            width: 100%;
+            background: transparent;
+            color: var(--text);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        textarea:focus { border-color: var(--accent); }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 10px 0;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .tool-btn {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid #555;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .footer {
+            padding: 15px;
+            background: var(--card);
+        }
+
+        .btn-post {
+            width: 100%;
+            padding: 15px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .btn-post:active { opacity: 0.8; transform: scale(0.98); }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>Hệ thống đăng bài Mask Từ Vựng</h2>
-        <textarea id="textInput" placeholder="Dán nội dung Markdown [English|Tiếng Việt] vào đây..."></textarea>
-        <button onclick="postArticle()">ĐĂNG BÀI NGAY</button>
+
+<header>
+    <strong>Soạn bài mới</strong>
+    <span id="status" style="font-size: 12px; color: #aaa;">Sẵn sàng</span>
+</header>
+
+<div class="editor-container">
+    <div class="toolbar">
+        <button class="tool-btn" onclick="insertText('[|]')">Chèn [Mask]</button>
+        <button class="tool-btn" onclick="insertText('**','**')">In đậm</button>
+        <button class="tool-btn" onclick="insertText('# ')">Tiêu đề</button>
+        <button class="tool-btn" onclick="insertText('- ')">Gạch đầu dòng</button>
     </div>
+    <textarea id="textInput" placeholder="Nội dung Markdown bài viết..."></textarea>
+</div>
+
+<div class="footer">
+    <button class="btn-post" onclick="postArticle()">ĐĂNG BÀI</button>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -33,21 +130,41 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    const input = document.getElementById('textInput');
+
+    // Hàm chèn nhanh cú pháp
+    window.insertText = (before, after = '') => {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const text = input.value;
+        const selected = text.substring(start, end);
+        input.value = text.substring(0, start) + before + selected + after + text.substring(end);
+        input.focus();
+        input.setSelectionRange(start + before.length, start + before.length + selected.length);
+    };
+
     window.postArticle = async () => {
-        const content = document.getElementById('textInput').value;
-        const tagInput = prompt("Nhập tags (cách nhau bởi dấu phẩy):", "IELTS, News");
-        if(!content) return;
+        const content = input.value;
+        if(!content) return alert("Chưa nhập nội dung!");
+
+        const tagInput = prompt("Nhập tags (cách nhau bởi dấu phẩy):", "English");
+        document.getElementById('status').innerText = "Đang đăng...";
 
         try {
             await addDoc(collection(db, "articles"), {
                 content: content,
-                tags: tagInput.split(','),
+                tags: tagInput ? tagInput.split(',').map(t => t.trim()) : [],
                 createdAt: new Date()
             });
-            alert("Đã đăng bài thành công!");
-            document.getElementById('textInput').value = "";
-        } catch (e) { alert("Lỗi: " + e.message); }
+            alert("Thành công!");
+            input.value = "";
+            document.getElementById('status').innerText = "Sẵn sàng";
+        } catch (e) { 
+            alert("Lỗi: " + e.message); 
+            document.getElementById('status').innerText = "Lỗi!";
+        }
     };
 </script>
+
 </body>
 </html>
