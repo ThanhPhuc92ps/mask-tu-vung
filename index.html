@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mask Từ Vựng - Học Tiếng Anh Chủ Động</title>
-    
     <link rel="stylesheet" href="assets/css/style.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
@@ -17,52 +15,46 @@
         <div id="tagDisplay" class="tag-list"></div>
     </header>
 
-    <div id="content">
-        <p style="text-align:center">Đang tải bài học mới nhất...</p>
-    </div>
+    <article id="content">
+        <p style="text-align:center; color: #999;">Đang tải bài học mới nhất...</p>
+    </article>
 </div>
 
 <div class="controls">
     <button class="btn-reveal" onclick="revealNext()">Mở từ tiếp theo (Space)</button>
-    <button class="btn-reset" onclick="location.reload()">Bài mới nhất</button>
+    <button class="btn-reset" onclick="location.reload()" style="background-color: #95a5a6; padding: 10px 15px; font-size: 12px;">Làm mới</button>
 </div>
 
 <script type="module">
-    // Import cấu hình và hàm xử lý từ các file đã tách
     import { firebaseConfig } from './assets/js/firebase-config.js';
     import { parseContent, setupRevealLogic } from './assets/js/utils.js';
-    
-    // Import Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // Khởi tạo Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    // Thiết lập logic phím Space và lật từ
-    const { revealNext } = setupRevealLogic();
-    window.revealNext = revealNext; // Đưa ra ngoài để nút HTML bấm được
-
-    const contentDiv = document.getElementById('content');
-    const tagDiv = document.getElementById('tagDisplay');
-
-    // Lấy dữ liệu từ Firestore
-    const q = query(collection(db, "articles"), orderBy("createdAt", "desc"));
     
+    // Khởi tạo logic phím Space và Reveal
+    const { revealNext } = setupRevealLogic();
+    window.revealNext = revealNext; 
+
+    // Lắng nghe dữ liệu
+    const q = query(collection(db, "articles"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
-            const latestDoc = snapshot.docs[0].data();
+            const data = snapshot.docs[0].data();
             
-            // 1. Hiển thị Tags
-            if (latestDoc.tags) {
-                tagDiv.innerHTML = latestDoc.tags.map(t => `<span class="tag-item">#${t}</span>`).join('');
+            // 1. Hiển thị Tags bài viết
+            const tagDiv = document.getElementById('tagDisplay');
+            if(data.tags) {
+                tagDiv.innerHTML = data.tags.map(t => `<span class="tag-item">#${t}</span>`).join('');
             }
 
-            // 2. Render nội dung bài viết bằng hàm parseContent đã tách
-            contentDiv.innerHTML = parseContent(latestDoc.content);
+            // 2. Hiển thị Nội dung đã được "Mask"
+            document.getElementById('content').innerHTML = parseContent(data.content);
         } else {
-            contentDiv.innerHTML = "<p style='text-align:center'>Chưa có bài viết nào. Hãy vào trang Admin để đăng bài!</p>";
+            document.getElementById('content').innerHTML = "<p style='text-align:center'>Chưa có bài viết nào.</p>";
         }
     });
 </script>
