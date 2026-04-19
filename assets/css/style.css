@@ -1,0 +1,202 @@
+/* --- BIẾN TOÀN CỤC (Để dễ đổi màu sau này) --- */
+:root {
+    --primary-color: #2c3e50;    /* Màu chữ chính */
+    --accent-color: #3498db;     /* Màu xanh thương hiệu */
+    --success-color: #2ecc71;    /* Màu nút Đăng bài */
+    --hint-color: #e67e22;       /* Màu cam gợi ý từ vựng */
+    --bg-color: #f4f7f6;         /* Màu nền trang */
+    --card-bg: #ffffff;          /* Màu nền khối nội dung */
+    --text-muted: #7f8c8d;       /* Màu chữ nhạt cho Tags */
+    --safe-top: 35px;            /* Khoảng cách né thanh Android */
+}
+
+/* --- ĐỊNH DẠNG CƠ BẢN --- */
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent; /* Khử bóng xanh khi chạm trên mobile */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.8;
+    background-color: var(--bg-color);
+    color: var(--primary-color);
+    margin: 0;
+    padding: 0;
+}
+
+/* --- BỐ CỤC CHUNG --- */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    min-height: 100vh;
+    padding: 40px 25px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-top: 10px;
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+    color: var(--primary-color);
+}
+
+/* --- STYLE TỪ VỰNG (Linh hồn của App) --- */
+.vocab {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0px 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+/* Trạng thái ẩn (Hiện Tiếng Việt) */
+.is-hint {
+    color: var(--hint-color);
+    background-color: rgba(230, 126, 34, 0.1);
+    border-bottom: 2px dashed var(--hint-color);
+}
+
+/* Trạng thái mở (Hiện Tiếng Anh) */
+.is-revealed {
+    color: var(--accent-color);
+    background-color: rgba(52, 152, 219, 0.1);
+    border-bottom: 2px solid var(--accent-color);
+    animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* --- ĐỊNH DẠNG BÀI VIẾT (Markdown) --- */
+#content {
+    font-size: 1.1rem;
+    color: #34495e;
+}
+
+#content h2 { color: var(--accent-color); border-left: 5px solid var(--accent-color); padding-left: 15px; }
+#content blockquote { border-left: 4px solid #ddd; padding-left: 15px; font-style: italic; color: #666; }
+#content img { max-width: 100%; border-radius: 8px; }
+
+/* --- TAGS --- */
+.tag-list {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.tag-item {
+    background: #ecf0f1;
+    color: var(--text-muted);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+/* --- NÚT ĐIỀU KHIỂN (Sticky) --- */
+.controls {
+    position: fixed;
+    bottom: 30px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1000;
+}
+
+button {
+    padding: 14px 24px;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+button:active { transform: scale(0.95); opacity: 0.9; }
+
+.btn-reveal { background: var(--accent-color); }
+.btn-reset { background: var(--text-muted); }
+
+/* --- GIAO DIỆN ADMIN --- */
+.admin-body {
+    background-color: #1a1a1a; /* Admin dùng Dark Mode cho chuyên nghiệp */
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-header {
+    padding: var(--safe-top) 15px 15px 15px;
+    background: #2d2d2d;
+    color: white;
+}
+
+.editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    gap: 10px;
+}
+
+textarea#textInput {
+    flex: 1;
+    width: 100%;
+    background: #252525;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-family: 'Courier New', monospace;
+    resize: none;
+    outline: none;
+}
+
+.toolbar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+.toolbar::-webkit-scrollbar { display: none; }
+
+.tool-btn {
+    background: #3d3d3d;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.btn-post {
+    background: var(--success-color);
+    width: 100%;
+    border-radius: 12px;
+    margin-top: 10px;
+    padding: 16px;
+}
+
+/* --- RESPONSIVE CHO MOBILE --- */
+@media (max-width: 600px) {
+    .container { padding: 25px 15px; }
+    h1 { font-size: 1.5rem; }
+    .controls { bottom: 20px; right: 15px; }
+    button { padding: 12px 20px; font-size: 14px; }
+}
