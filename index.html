@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Học Tiếng Anh Qua Tin Tức</title>
+    <title>Mask Từ Vựng - Học Tiếng Anh Chủ Động</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
             --accent-color: #3498db;
+            --success-color: #27ae60;
             --hint-color: #e67e22;
             --bg-color: #f4f7f6;
         }
@@ -26,13 +27,14 @@
             max-width: 800px;
             margin: 0 auto;
             background: white;
-            padding: 40px;
-            border-radius: 8px;
+            padding: 30px;
+            border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
         h1 {
             text-align: center;
+            color: var(--primary-color);
             border-bottom: 2px solid var(--accent-color);
             padding-bottom: 10px;
         }
@@ -46,20 +48,19 @@
             transition: all 0.3s;
         }
 
-        /* Khi đang ở dạng gợi ý (Tiếng Việt) */
         .is-hint {
             color: var(--hint-color);
             background-color: rgba(230, 126, 34, 0.1);
             border-bottom: 2px dashed var(--hint-color);
         }
 
-        /* Khi đã mở sang Tiếng Anh */
         .is-revealed {
             color: var(--accent-color);
             background-color: rgba(52, 152, 219, 0.1);
             border-bottom: 2px solid var(--accent-color);
         }
 
+        /* Khu vực điều khiển */
         .controls {
             position: fixed;
             bottom: 30px;
@@ -67,113 +68,163 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            z-index: 1000;
         }
 
         button {
             padding: 12px 20px;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
-            background-color: var(--accent-color);
             color: white;
             border: none;
             border-radius: 50px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: transform 0.2s;
+            transition: 0.2s;
         }
 
-        button:hover {
-            transform: scale(1.05);
-            background-color: #2980b9;
-        }
+        button:hover { transform: scale(1.05); }
 
+        .btn-reveal { background-color: var(--accent-color); }
+        .btn-save { background-color: var(--success-color); width: 100%; margin-top: 10px; }
+        .btn-reset { background-color: #95a5a6; }
+
+        /* Khu vực soạn thảo */
         .editor-area {
             margin-top: 50px;
-            border-top: 1px solid #ddd;
+            border-top: 2px solid #eee;
             padding-top: 20px;
         }
 
         textarea {
             width: 100%;
-            height: 150px;
-            padding: 10px;
+            height: 180px;
+            padding: 15px;
             border: 1px solid #ccc;
-            border-radius: 5px;
-            font-family: monospace;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+        }
+
+        #tagDisplay {
+            text-align: center;
+            margin-bottom: 20px;
+            font-style: italic;
+            color: #7f8c8d;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <h1>Mask Từ Vựng</h1>
+    <div id="tagDisplay"></div>
+    
     <div id="content">
-        </div>
+        <p style="text-align:center">Đang tải nội dung từ hệ thống...</p>
+    </div>
 
     <div class="editor-area">
-        <h3>Soạn thảo bài viết (Markdown)</h3>
-        <p><small>Cú pháp: <code>[English|Tiếng Việt]</code></small></p>
-        <textarea id="markdownInput" placeholder="Nhập bài viết của bạn tại đây...">
-# Tiêu đề bài báo
-
-[Learning|Học tập] a new language is [challenging|thử thách] but [rewarding|đáng giá]. 
-
-As the saying goes: "[Knowledge|Tri thức] is power". 
-
-Hãy thử nhấn nút xanh để mở từng từ một!
-        </textarea>
-        <button onclick="renderArticle()">Cập nhật bài viết</button>
+        <h3>Soạn bài viết mới</h3>
+        <p><small>Cú pháp: <code>[English|Tiếng Việt]</code>. Dùng Markdown để định dạng.</small></p>
+        <textarea id="markdownInput" placeholder="Nhập nội dung tại đây..."></textarea>
+        <button class="btn-save" onclick="saveToFirebase()">Đăng bài lên hệ thống (Firestore)</button>
     </div>
 </div>
 
 <div class="controls">
-    <button onclick="revealNext()">Hiện từ tiếp theo (Space)</button>
-    <button onclick="resetAll()" style="background-color: #95a5a6;">Đặt lại từ đầu</button>
+    <button class="btn-reveal" onclick="revealNext()">Hiện từ tiếp theo (Space)</button>
+    <button class="btn-reset" onclick="location.reload()">Làm mới trang</button>
 </div>
 
-<script>
+<script type="module">
+    // 1. Import Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 2. Cấu hình Firebase của bạn
+    const firebaseConfig = {
+        apiKey: "AIzaSyASbbhvVKV12-ToHs5Lq2EZyNjvla-ALkU",
+        authDomain: "mask-tu-vung.firebaseapp.com",
+        projectId: "mask-tu-vung",
+        storageBucket: "mask-tu-vung.firebasestorage.app",
+        messagingSenderId: "281486876910",
+        appId: "1:281486876910:web:02446860686fe9686253ff",
+        measurementId: "G-CFJHEJ2NG9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     const contentDiv = document.getElementById('content');
     const inputArea = document.getElementById('markdownInput');
+    const tagDiv = document.getElementById('tagDisplay');
 
-    function renderArticle() {
-        const rawMarked = marked.parse(inputArea.textContent || inputArea.value);
-        
-        // Regex xử lý cú pháp [English|Vietnamese]
-        // Group 1: English ($1), Group 2: Vietnamese ($2)
-        const customFormat = rawMarked.replace(/\[(.*?)\|(.*?)\]/g, (match, en, vi) => {
+    // --- HÀM RENDER NỘI DUNG ---
+    window.renderArticle = (text) => {
+        if (!text) return;
+        const rawHTML = marked.parse(text);
+        // Chuyển [EN|VI] thành thẻ span tương tác
+        const finalHTML = rawHTML.replace(/\[(.*?)\|(.*?)\]/g, (match, en, vi) => {
             return `<span class="vocab is-hint" data-en="${en}" data-vi="${vi}">${vi}</span>`;
         });
+        contentDiv.innerHTML = finalHTML;
+    };
 
-        contentDiv.innerHTML = customFormat;
-    }
+    // --- HÀM LƯU DỮ LIỆU ---
+    window.saveToFirebase = async () => {
+        const content = inputArea.value;
+        if (!content) return alert("Vui lòng nhập nội dung!");
 
-    function revealNext() {
-        // Tìm từ đầu tiên vẫn còn đang hiện gợi ý (is-hint)
+        const tagInput = prompt("Nhập tags cho bài viết (cách nhau bởi dấu phẩy):", "English, Learning");
+        const tags = tagInput ? tagInput.split(',').map(t => t.trim()) : ["General"];
+
+        try {
+            await addDoc(collection(db, "articles"), {
+                content: content,
+                tags: tags,
+                createdAt: new Date()
+            });
+            alert("Đã đăng bài thành công!");
+            inputArea.value = ""; 
+        } catch (e) {
+            console.error(e);
+            alert("Lỗi: " + e.message);
+        }
+    };
+
+    // --- LẮNG NGHE DỮ LIỆU TỪ FIREBASE ---
+    const q = query(collection(db, "articles"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+            const latestData = snapshot.docs[0].data();
+            tagDiv.innerHTML = "Tags: " + (latestData.tags ? latestData.tags.join(', ') : 'None');
+            window.renderArticle(latestData.content);
+        } else {
+            contentDiv.innerHTML = "<p style='text-align:center'>Chưa có bài viết nào trong hệ thống.</p>";
+        }
+    });
+
+    // --- LOGIC HIỂN THỊ TỪ ---
+    window.revealNext = () => {
         const nextVocab = document.querySelector('.vocab.is-hint');
         if (nextVocab) {
             nextVocab.textContent = nextVocab.getAttribute('data-en');
             nextVocab.classList.remove('is-hint');
             nextVocab.classList.add('is-revealed');
-            
-            // Cuộn màn hình đến từ vừa mở nếu cần
             nextVocab.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
-            alert("Đã mở hết tất cả từ vựng!");
+            alert("Đã mở hết từ vựng trong bài!");
         }
-    }
+    };
 
-    function resetAll() {
-        renderArticle();
-    }
-
-    // Lắng nghe phím Space để mở từ nhanh
+    // Phím tắt Space
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA') {
-            e.preventDefault(); // Ngăn cuộn trang khi bấm Space
-            revealNext();
+            e.preventDefault();
+            window.revealNext();
         }
     });
-
-    // Khởi tạo bài viết lần đầu
-    renderArticle();
 </script>
 
 </body>
